@@ -153,7 +153,7 @@
         <div class="sec-t">학생 정보</div>
         <div class="grid">
           <div><label>이름</label><input type="text" id="name" value="서미르"></div>
-          <div><label>영문 이름</label><input type="text" id="eng" value="SEO MIR"></div>
+          <div><label>영문 이름</label><input type="text" id="eng" value="SEO MIR" style="text-transform:uppercase" autocapitalize="characters"></div>
           <div class="full"><label>학과 선택</label><select id="deptSel"></select></div>
           <div><label>단과대학</label><input type="text" id="college" value="경영대학"></div>
           <div><label>학과</label><input type="text" id="dept" value="호텔경영학과"></div>
@@ -192,10 +192,14 @@
 
     </div>
     <div class="foot">
-      <button type="button" class="btn main" id="dl">앞뒷면 한 장으로 저장</button>
+      <button type="button" class="btn main" id="dl">한 장으로 저장</button>
       <div class="btns">
         <button type="button" class="btn sub" id="dlF">앞면만</button>
         <button type="button" class="btn sub" id="dlB">뒷면만</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-size:11px;color:#aaa">입력한 내용은 이 브라우저에 자동 저장돼요</span>
+        <button type="button" class="link" id="resetAll" style="padding:0">처음부터 다시</button>
       </div>
     </div>
   </div>
@@ -1100,7 +1104,8 @@ signPad = $('pad');
 // 서명 글씨는 직접 고치기 전까지 영문 이름 따라감
 let signTouched = false;
 $('sign').addEventListener('input', () => { signTouched = true; });
-$('eng').addEventListener('input', () => { if (!signTouched) { $('sign').value = $('eng').value.toLowerCase().replace(/(^|\s)\S/g, m => m.toUpperCase()); updateFontPreviews(); draw(); } });
+$('eng').addEventListener('input', () => {
+  const el = $('eng'), pos = el.selectionStart; el.value = el.value.toUpperCase(); el.setSelectionRange(pos, pos); if (!signTouched) { $('sign').value = $('eng').value.toLowerCase().replace(/(^|\s)\S/g, m => m.toUpperCase()); updateFontPreviews(); draw(); } });
 
 document.querySelectorAll('input[type=text]').forEach(el => el.addEventListener('input', draw));
 $('rand').addEventListener('click', randCard);
@@ -1247,6 +1252,75 @@ $('logoPosReset').addEventListener('click', () => { logoScale = 1; logoDX = logo
 });
 
 autoFill(true);
+
+/* ---------- 새로고침해도 유지: 브라우저에 자동 저장 ---------- */
+const SAVE_KEY = 'sungwoon_id_maker_v1';
+const IDS = ['name', 'eng', 'deptSel', 'college', 'dept', 'year', 'sid', 'jumin', 'issued', 'cardno', 'valid', 'cvc'];
+const urlCache = new WeakMap();
+function imgURL(img, max, type) {
+  if (!img) return null;
+  if (urlCache.has(img)) return urlCache.get(img);
+  const sc = Math.min(1, max / Math.max(img.width, img.height));
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+  cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+  const url = cv.toDataURL(type || 'image/jpeg', 0.85);
+  urlCache.set(img, url); return url;
+}
+let saveTimer = null, restoring = false;
+function saveState() {
+  if (restoring) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const st = {
+      v: {}, style, signMode, bgMode: { ...bgMode },
+      touched: { ...touched }, sidTouched, signTouched,
+      photoZoom, photoOX, photoOY, logoScale, logoDX, logoDY,
+      photo: imgURL(photoImg, 700),
+      logo: imgURL(customLogo, 600, 'image/png'),
+      bgFront: imgURL(bgUser.front, 1000), bgBack: imgURL(bgUser.back, 1000),
+      sign: signPad && signPad.dataset.dirty === '1' ? signPad.toDataURL('image/png') : null
+    };
+    IDS.forEach(id => { st.v[id] = $(id).value; });
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); }
+    catch (e) { try { st.bgFront = st.bgBack = null; localStorage.setItem(SAVE_KEY, JSON.stringify(st)); } catch (e2) {} }
+  }, 400);
+}
+const _draw = draw;
+draw = function () { _draw(); saveState(); };
+const loadImg = url => new Promise(res => { if (!url) return res(null); const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = url; });
+async function restoreState() {
+  let st;
+  try { st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { st = null; }
+  if (!st) return;
+  restoring = true;
+  IDS.forEach(id => { if (st.v && st.v[id] != null) $(id).value = st.v[id]; });
+  Object.assign(touched, st.touched || {});
+  sidTouched = !!st.sidTouched; signTouched = !!st.signTouched;
+  photoZoom = st.photoZoom || 1; photoOX = st.photoOX || 0; photoOY = st.photoOY || 0; $('zoom').value = photoZoom;
+  logoScale = st.logoScale || 1; logoDX = st.logoDX || 0; logoDY = st.logoDY || 0; $('logoScale').value = logoScale;
+  const [p, l, bf, bb, sg] = await Promise.all([loadImg(st.photo), loadImg(st.logo), loadImg(st.bgFront), loadImg(st.bgBack), loadImg(st.sign)]);
+  if (p) { photoImg = p; $('thumb').style.backgroundImage = `url(${st.photo})`; $('photoAdj').style.display = ''; }
+  if (l) { customLogo = l; $('logoThumb').style.backgroundImage = `url(${st.logo})`; $('logoReset').style.display = ''; }
+  bgUser.front = bf; bgUser.back = bb;
+  if (sg && signPad) { signPad.getContext('2d').drawImage(sg, 0, 0); signPad.dataset.dirty = '1'; }
+  ['front', 'back'].forEach(side => {
+    let m = (st.bgMode || {})[side] || 'default';
+    if (m === 'image' && !bgUser[side]) m = 'default';
+    bgMode[side] = m;
+    document.querySelectorAll(`.bgseg[data-side=${side}] button`).forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  });
+  const sm = document.querySelector(`#signMode [data-m="${st.signMode}"]`); if (sm) sm.click();
+  const sb = document.querySelector(`#styleSeg [data-style="${st.style}"]`); if (sb) sb.click();
+  restoring = false;
+  draw();
+}
+$('resetAll').addEventListener('click', () => {
+  if (!confirm('입력한 내용과 올린 이미지를 모두 지우고 처음부터 할까요?')) return;
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  restoring = true; location.reload();
+});
+restoreState();
 draw();
 if (document.fonts) document.fonts.ready.then(draw);
 </script>
