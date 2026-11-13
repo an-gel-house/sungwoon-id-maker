@@ -712,10 +712,13 @@ let style = '2004';
 function draw() {
   logoRects.clear();
   const vertical = style === 'new';
-  const w = vertical ? 416 : 660, h = vertical ? 660 : 416;
+  // 실제 신용카드 크기(85.6×54mm)를 300dpi로: 1011×637px
+  const S = 1011 / 660;
+  const w = Math.round((vertical ? 416 : 660) * S), h = Math.round((vertical ? 660 : 416) * S);
   [fv, bv].forEach(cv => {
-    if (cv.width !== w) { cv.width = w; cv.height = h; }
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
     cv.className = vertical ? 'v' : 'h';
+    cv.getContext('2d').setTransform(S, 0, 0, S, 0, 0);
   });
   $('cards').classList.toggle('h-mode', !vertical);
   document.body.classList.toggle('mode-new', vertical);
