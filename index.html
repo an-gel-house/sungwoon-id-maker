@@ -1091,7 +1091,8 @@ $('rand').addEventListener('click', randCard);
 
 function save(canvas, suffix) {
   const a = document.createElement('a');
-  a.download = `성운대_학생증_${$('name').value || 'card'}${suffix}.png`;
+  const kind = style === 'new' ? '세로형' : '가로형';
+  a.download = `성운대_학생증_${$('name').value || 'card'}_${kind}${suffix}.png`;
   a.href = canvas.toDataURL('image/png');
   a.click();
 }
