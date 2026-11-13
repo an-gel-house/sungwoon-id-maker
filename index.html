@@ -1117,11 +1117,15 @@ function save(canvas, suffix) {
   a.click();
 }
 $('dl').addEventListener('click', () => {
+  const horizontal = fv.width > fv.height;   // 가로형은 위아래, 세로형은 좌우
+  const gap = 40;
   const both = document.createElement('canvas');
-  both.width = fv.width + 40 + bv.width; both.height = Math.max(fv.height, bv.height);
+  if (horizontal) { both.width = Math.max(fv.width, bv.width); both.height = fv.height + gap + bv.height; }
+  else { both.width = fv.width + gap + bv.width; both.height = Math.max(fv.height, bv.height); }
   const b = both.getContext('2d');
   b.drawImage(fv, 0, 0);
-  b.drawImage(bv, FW + 40, 0);
+  if (horizontal) b.drawImage(bv, 0, fv.height + gap);
+  else b.drawImage(bv, fv.width + gap, 0);
   save(both, '_양면');
 });
 $('dlF').addEventListener('click', () => save(fv, '_앞면'));
