@@ -120,10 +120,10 @@
           <input type="file" id="logoFile" accept="image/*" hidden>
         </label>
         <div style="margin-top:10px">
-          <label>크기</label>
+          <label>배경 로고 크기</label>
           <input type="range" id="logoScale" min="0.5" max="1.8" step="0.01" value="1" style="width:100%;accent-color:#1f2f55">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:11px;color:#aaa">카드 미리보기의 로고를 끌어서 위치 조절</span>
+            <span style="font-size:11px;color:#aaa">카드 배경의 큰 로고를 끌어서 위치 조절</span>
             <button type="button" class="link" id="logoPosReset">위치 초기화</button>
           </div>
         </div>
@@ -230,9 +230,11 @@ function dLogo(c, img, x, y, w, h) {
   const src = customLogo || img;
   let dw = w, dh = h;
   if (customLogo) { const sc = Math.min(w / src.width, h / src.height); dw = src.width * sc; dh = src.height * sc; }
-  dw *= logoScale; dh *= logoScale;
-  const cx = x + w / 2 + logoDX * w, cy = y + h / 2 + logoDY * h;
-  if (w < 120) {
+  let cx = x + w / 2, cy = y + h / 2;
+  // 위치·크기 조절은 배경에 크게 깔린 로고(워터마크)에만 적용
+  if (w >= 120) {
+    dw *= logoScale; dh *= logoScale;
+    cx += logoDX * w; cy += logoDY * h;
     const list = logoRects.get(c.canvas) || [];
     list.push({ x: cx - dw / 2, y: cy - dh / 2, w: dw, h: dh, bw: w, bh: h, m: c.getTransform() });
     logoRects.set(c.canvas, list);
@@ -1222,13 +1224,20 @@ $('logoPosReset').addEventListener('click', () => { logoScale = 1; logoDX = logo
     const r = cv.getBoundingClientRect();
     return L.m.inverse().transformPoint(new DOMPoint((e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height));
   };
+  const onPhoto = e => {
+    const pr = photoRects.get(cv); if (!photoImg || !pr) return false;
+    const r = cv.getBoundingClientRect();
+    const p = pr.m.inverse().transformPoint(new DOMPoint((e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height));
+    return p.x >= pr.x && p.x <= pr.x + pr.w && p.y >= pr.y && p.y <= pr.y + pr.h;
+  };
   cv.addEventListener('pointerdown', e => {
+    if (onPhoto(e)) return;
     const h = hit(e); if (!h) return;
     drag = { L: h.L, sx: h.p.x, sy: h.p.y, dx: logoDX, dy: logoDY };
     cv.setPointerCapture(e.pointerId); e.preventDefault(); e.stopImmediatePropagation();
   }, true);
   cv.addEventListener('pointermove', e => {
-    if (!drag) { if (hit(e)) cv.style.cursor = 'move'; return; }
+    if (!drag) { if (!onPhoto(e) && hit(e)) cv.style.cursor = 'move'; return; }
     const p = toLocal(e, drag.L);
     logoDX = Math.max(-2, Math.min(2, drag.dx + (p.x - drag.sx) / drag.L.bw));
     logoDY = Math.max(-2, Math.min(2, drag.dy + (p.y - drag.sy) / drag.L.bh));
