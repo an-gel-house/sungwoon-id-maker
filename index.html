@@ -759,32 +759,8 @@ function photoBox(c, px, py, pw, ph) {
 const PRINT = "'Nanum Gothic', 'NanumGothic', 'Dotum', 'Noto Sans KR', sans-serif";
 if (document.fonts) Promise.all([document.fonts.load("800 17px 'Nanum Gothic'", '서미르0'), document.fonts.load("700 17px 'Nanum Gothic'", '서미르0')]).then(() => draw && draw()).catch(() => {});
 function printLayer(c, fn) {
-  const cv = c.canvas;
-  const off = document.createElement('canvas');
-  off.width = cv.width; off.height = cv.height;
-  const o = off.getContext('2d');
-  o.setTransform(c.getTransform());
-  photoTarget = cv;
-  fn(o);
-  photoTarget = null;
-  // 잉크 빠진 자국
-  o.setTransform(1, 0, 0, 1, 0, 0);
-  o.globalCompositeOperation = 'destination-out';
-  let sd = 9; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < 500; i++) {
-    o.globalAlpha = 0.1 + rnd() * 0.3;
-    o.fillRect(rnd() * off.width, rnd() * off.height, 0.6 + rnd() * 1.2, 0.6 + rnd() * 1.2);
-  }
-  // 가로 결 (헤드 줄무늬)
-  o.globalAlpha = 0.05;
-  for (let y = 0; y < off.height; y += 3) o.fillRect(0, y, off.width, 1);
-  c.save();
-  c.setTransform(1, 0, 0, 1, 0, 0);
-  c.filter = 'blur(0.25px)';
-  c.globalAlpha = 1;
-  c.drawImage(off, 0.6, 0.4);   // 살짝 어긋난 인쇄 위치
-  c.filter = 'none';
-  c.restore();
+  // 프린트 질감(번짐·잉크 빠짐·줄무늬) 없이 또렷하게
+  fn(c);
 }
 function drawFront04() {
   const c = f;
