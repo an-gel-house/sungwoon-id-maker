@@ -17,6 +17,7 @@
   .stage .sub { font-size: 11px; color: #999; letter-spacing: 1px; margin: 2px 0 18px; }
   .seg { display: inline-flex; background: #e8e8e5; border-radius: 8px; padding: 3px; margin-bottom: 20px; }
   .seg button { border: none; background: none; padding: 7px 16px; border-radius: 6px; font-family: inherit; font-size: 13px; color: #666; cursor: pointer; }
+  .seg button .era { display: block; font-size: 10px; font-weight: 400; color: #999; margin-top: 1px; }
   .seg button.on { background: #fff; color: #1f2f55; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
   .cards { flex: 1; display: flex; gap: 22px; align-items: center; justify-content: center; flex-wrap: wrap; align-content: center; }
   .cards.h-mode { flex-direction: column; flex-wrap: nowrap; }
@@ -39,6 +40,7 @@
   input[type=text]:focus { outline: none; border-color: #1f2f55; background: #fff; }
   .only04 { }
   body.mode-new .only04 { display: none; }
+  .ver { font-size: 12px; color: #a8a8a3; letter-spacing: 1px; margin-top: -10px; }
   .only-new { display: none; }
   body.mode-new .only-new { display: block; }
 
@@ -86,6 +88,7 @@
       <button type="button" data-style="2004" class="on">가로형</button>
       <button type="button" data-style="new">세로형</button>
     </div>
+    <div class="ver only04">(2004 ver.)</div>
     <div class="cards" id="cards">
       <div class="card-wrap"><canvas id="card" width="660" height="416"></canvas><div class="cap">앞면</div></div>
       <div class="card-wrap"><canvas id="back" width="660" height="416"></canvas><div class="cap">뒷면</div></div>
